@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of the modding toolset for Disciples 2.
  * (https://github.com/VladimirMakeev/D2ModdingToolset)
  * Copyright (C) 2020 Vladimir Makeev.
@@ -211,6 +211,7 @@ static void setupDefaultLogger()
     // Using UTC helps to match logs from different users (with different timezones).
     // It also helps to match client logs with lobby server logs.
     logger->set_pattern("%D %H:%M:%S.%e %5t [%=8!n] [%L] %v", spdlog::pattern_time_type::utc);
+    logger->flush_on(spdlog::level::trace);
 }
 
 BOOL APIENTRY DllMain(HMODULE hDll, DWORD reason, LPVOID reserved)

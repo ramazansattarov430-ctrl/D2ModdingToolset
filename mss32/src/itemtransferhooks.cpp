@@ -1706,23 +1706,109 @@ static void setupPickupButtons(game::CPickUpDropInterf* thisptr, game::CDialogIn
     hook("BTN_SORT_R_CUSTOM", (CB::Callback)sortPickupCustomR);
 }
 
-static bool tryAddUnitToGroup(const game::VisitorApi::Api& visitor,
-                              const game::CMidgardID* unitId,
-                              const game::CMidgardID* groupId,
-                              int position,
-                              int* creationTurn,
-                              game::IMidgardObjectMap* objectMap,
-                              DWORD* exceptionCodeOut)
+// TEMP DEBUG: set to false to disable leadership check for position-diagnostics testing.
+// !!! REMEMBER TO SET BACK TO true AFTER TESTING !!!
+static constexpr bool ENFORCE_LEADERSHIP_LIMIT = true;
+
+static void transferArmyDirection(const game::VisitorApi::Api& visitor,
+                                  const game::CMidUnitGroupApi::Api& groupApi,
+                                  game::CMidStack* srcStack,
+                                  const game::CMidgardID& srcId,
+                                  game::CMidStack* dstStack,
+                                  const game::CMidgardID& dstId,
+                                  game::IMidgardObjectMap* objectMap,
+                                  bool& anyMoved)
 {
-    bool added = false;
-    __try {
-        added = visitor.addUnitToGroup(unitId, groupId, position, creationTurn, 1, objectMap, 1);
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        *exceptionCodeOut = GetExceptionCode();
-        return false;
+    using namespace game;
+
+    int dstLeadership = -1;
+    auto dstLeaderUnit = static_cast<const CMidUnit*>(
+        objectMap->vftable->findScenarioObjectById(objectMap, &dstStack->leaderId));
+    if (dstLeaderUnit && dstLeaderUnit->unitImpl) {
+        auto stackLeader = gameFunctions().castUnitImplToStackLeader(dstLeaderUnit->unitImpl);
+        if (stackLeader) {
+            dstLeadership = stackLeader->vftable->getLeadership(stackLeader);
+        }
     }
-    *exceptionCodeOut = 0;
-    return added;
+    int dstUnitCount = 0;
+    for (int p = 0; p < 6; ++p) {
+        if (*groupApi.getUnitIdByPosition(&dstStack->group, p) != emptyId) {
+            ++dstUnitCount;
+        }
+    }
+    spdlog::debug("exchangeSwapArmies: dst leadership = {:d}, dst unit count = {:d}",
+                  dstLeadership, dstUnitCount);
+    if (ENFORCE_LEADERSHIP_LIMIT && dstLeadership >= 0 && dstUnitCount >= dstLeadership) {
+        spdlog::debug("exchangeSwapArmies: dst leaders leadership is full, nothing to do");
+        return;
+    }
+
+    for (int srcPos = 0; srcPos < 6; ++srcPos) {
+        auto srcUnitId = *groupApi.getUnitIdByPosition(&srcStack->group, srcPos);
+        if (srcUnitId == emptyId) {
+            continue;
+        }
+
+        if (srcUnitId == srcStack->leaderId) {
+            spdlog::debug("exchangeSwapArmies: skipping leader at pos {:d}", srcPos);
+            continue;
+        }
+
+        int freePos = -1;
+        auto sameSlotUnitId = *groupApi.getUnitIdByPosition(&dstStack->group, srcPos);
+        if (sameSlotUnitId == emptyId) {
+            freePos = srcPos;
+        } else {
+            for (int dstPos = 0; dstPos < 6; ++dstPos) {
+                auto dstUnitId = *groupApi.getUnitIdByPosition(&dstStack->group, dstPos);
+                if (dstUnitId == emptyId) {
+                    freePos = dstPos;
+                    break;
+                }
+            }
+        }
+
+        if (freePos == -1) {
+            spdlog::debug("exchangeSwapArmies: no free slot in dst group, stopping direction");
+            break;
+        }
+
+        int remaining = 0;
+        for (int p = 0; p < 6; ++p) {
+            auto id = *groupApi.getUnitIdByPosition(&srcStack->group, p);
+            if (id != emptyId) {
+                ++remaining;
+            }
+        }
+        if (remaining <= 1) {
+            spdlog::debug("exchangeSwapArmies: stopping before emptying src group entirely "
+                          "(remaining = {:d})",
+                          remaining);
+            break;
+        }
+
+        bool swapped = false;
+        if (visitor.swapUnitPosition(srcPos, &srcId, freePos, &dstId, objectMap, 0)) {
+            swapped = visitor.swapUnitPosition(srcPos, &srcId, freePos, &dstId, objectMap, 1);
+        } else {
+            swapped = visitor.swapUnitPosition(freePos, &dstId, srcPos, &srcId, objectMap, 1);
+        }
+
+        spdlog::debug("exchangeSwapArmies: swap {:s} from src pos {:d} to dst pos {:d} = {:s}",
+                      idToString(&srcUnitId), srcPos, freePos, swapped ? "OK" : "FAIL");
+        spdlog::debug("exchangeSwapArmies: srcPos row={:d} col={:d}, freePos row={:d} col={:d}",
+                      srcPos % 2, srcPos / 2, freePos % 2, freePos / 2);
+        if (swapped) {
+            anyMoved = true;
+            ++dstUnitCount;
+            if (ENFORCE_LEADERSHIP_LIMIT && dstLeadership >= 0 && dstUnitCount >= dstLeadership) {
+                spdlog::debug("exchangeSwapArmies: dst leaders leadership reached, stopping direction");
+                break;
+            }
+        } else {
+            spdlog::error("exchangeSwapArmies: failed to swap unit {:s}", idToString(&srcUnitId));
+        }
+    }
 }
 
 static void __fastcall exchangeSwapArmies(game::CExchangeInterf* thisptr, int /*%edx*/)
@@ -1749,87 +1835,15 @@ static void __fastcall exchangeSwapArmies(game::CExchangeInterf* thisptr, int /*
         return;
     }
 
-    const auto& idApi = CMidgardIDApi::get();
-    spdlog::debug("exchangeSwapArmies: leftId type = {:d}, rightId type = {:d}",
-                  (int)idApi.getType(&leftId), (int)idApi.getType(&rightId));
-
-    int leftLeadership = -1;
-    auto leftLeaderUnit = static_cast<const CMidUnit*>(
-        objectMap->vftable->findScenarioObjectById(objectMap, &leftStack->leaderId));
-    if (leftLeaderUnit && leftLeaderUnit->unitImpl) {
-        auto stackLeader = gameFunctions().castUnitImplToStackLeader(leftLeaderUnit->unitImpl);
-        if (stackLeader) {
-            leftLeadership = stackLeader->vftable->getLeadership(stackLeader);
-        }
-    }
-    int leftUnitCount = 0;
-    for (int p = 0; p < 6; ++p) {
-        if (*groupApi.getUnitIdByPosition(&leftStack->group, p) != emptyId) {
-            ++leftUnitCount;
-        }
-    }
-    spdlog::debug("exchangeSwapArmies: left leadership = {:d}, left unit count = {:d}",
-                  leftLeadership, leftUnitCount);
-    if (leftLeadership >= 0 && leftUnitCount >= leftLeadership) {
-        spdlog::debug("exchangeSwapArmies: left leader's leadership is full, nothing to do");
-        return;
-    }
-
     bool anyMoved = false;
-    for (int srcPos = 0; srcPos < 6; ++srcPos) {
-        auto rightUnitId = *groupApi.getUnitIdByPosition(&rightStack->group, srcPos);
-        if (rightUnitId == emptyId) {
-            continue;
-        }
 
-        int freePos = -1;
-        for (int dstPos = 0; dstPos < 6; ++dstPos) {
-            auto leftUnitId = *groupApi.getUnitIdByPosition(&leftStack->group, dstPos);
-            if (leftUnitId == emptyId) {
-                freePos = dstPos;
-                break;
-            }
-        }
+    spdlog::debug("exchangeSwapArmies: --- transferring right -> left ---");
+    transferArmyDirection(visitor, groupApi, rightStack, rightId, leftStack, leftId, objectMap,
+                          anyMoved);
 
-        if (freePos == -1) {
-            spdlog::debug("exchangeSwapArmies: no free slot in left group, stopping");
-            break;
-        }
-
-        int remaining = 0;
-        for (int p = 0; p < 6; ++p) {
-            auto id = *groupApi.getUnitIdByPosition(&rightStack->group, p);
-            if (id != emptyId) {
-                ++remaining;
-            }
-        }
-        if (remaining <= 1) {
-            spdlog::debug("exchangeSwapArmies: stopping before emptying right group entirely "
-                          "(remaining = {:d})",
-                          remaining);
-            break;
-        }
-
-        bool swapped = false;
-        if (visitor.swapUnitPosition(srcPos, &rightId, freePos, &leftId, objectMap, 0)) {
-            swapped = visitor.swapUnitPosition(srcPos, &rightId, freePos, &leftId, objectMap, 1);
-        } else {
-            swapped = visitor.swapUnitPosition(freePos, &leftId, srcPos, &rightId, objectMap, 1);
-        }
-
-        spdlog::debug("exchangeSwapArmies: swap {:s} from right pos {:d} to left pos {:d} = {:s}",
-                      idToString(&rightUnitId), srcPos, freePos, swapped ? "OK" : "FAIL");
-        if (swapped) {
-            anyMoved = true;
-            ++leftUnitCount;
-            if (leftLeadership >= 0 && leftUnitCount >= leftLeadership) {
-                spdlog::debug("exchangeSwapArmies: left leader's leadership reached, stopping");
-                break;
-            }
-        } else {
-            spdlog::error("exchangeSwapArmies: failed to swap unit {:s}", idToString(&rightUnitId));
-        }
-    }
+    spdlog::debug("exchangeSwapArmies: --- transferring left -> right ---");
+    transferArmyDirection(visitor, groupApi, leftStack, leftId, rightStack, rightId, objectMap,
+                          anyMoved);
 
     if (anyMoved) {
         spdlog::debug("exchangeSwapArmies: forcing UI refresh for both stacks");

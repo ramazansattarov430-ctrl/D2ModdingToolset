@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of the modding toolset for Disciples 2.
  * (https://github.com/VladimirMakeev/D2ModdingToolset)
  */
@@ -14,6 +14,7 @@
 namespace hooks {
 
 bool lockLordFaceButton = false;
+bool isLoadingSkirmishMultiSave = false;
 
 void __fastcall menuLordFaceButtonClickHooked(game::CMenuLord* thisptr, int /*%edx*/)
 {
@@ -79,4 +80,3 @@ void __fastcall lobbyLordButtonClickHooked(void* thisptr, int /*%edx*/)
     getOriginalFunctions().lobbyLordButtonClick(thisptr);
 }
 } // namespace hooks
-

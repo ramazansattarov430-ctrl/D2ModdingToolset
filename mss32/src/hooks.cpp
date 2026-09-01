@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of the modding toolset for Disciples 2.
  * (https://github.com/VladimirMakeev/D2ModdingToolset)
  * Copyright (C) 2020 Vladimir Makeev.
@@ -3174,5 +3174,3 @@ game::IMqImage2* __stdcall getSpellAreaFogImageHooked(bool spellAllowed)
 }
 
 } // namespace hooks
-
-

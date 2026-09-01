@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of the modding toolset for Disciples 2.
  * (https://github.com/VladimirMakeev/D2ModdingToolset)
  */
@@ -19,6 +19,16 @@ namespace hooks {
  * unless explicitly set again for the next screen.
  */
 extern bool lockLordFaceButton;
+
+/**
+ * Set to true right when a saved skirmish game genuinely begins loading
+ * through the network/multiplayer load path (MenuPhase::Single2LoadSkirmish,
+ * networkGame branch). Used to disambiguate MenuPhase::NewSkirmish2LobbyHost
+ * from MenuPhase::LoadSkirmishMulti, which share the same underlying value,
+ * instead of guessing after the fact from a possibly stale currentMenu.
+ * Reset to false immediately after being checked.
+ */
+extern bool isLoadingSkirmishMultiSave;
 
 void __fastcall menuLordFaceButtonClickHooked(game::CMenuLord* thisptr, int /*%edx*/);
 
@@ -53,4 +63,3 @@ void __fastcall lobbyLordButtonClickHooked(void* thisptr, int /*%edx*/);
 } // namespace hooks
 
 #endif // MENULORDHOOKS_H
-

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * This file is part of the modding toolset for Disciples 2.
  * (https://github.com/VladimirMakeev/D2ModdingToolset)
  * Copyright (C) 2021 Vladimir Makeev.
@@ -189,5 +189,3 @@ void CNetCustomPlayerClient::RoomsCallback::RoomDestroyedOnModeratorLeft_Callbac
 }
 
 } // namespace hooks
-
-

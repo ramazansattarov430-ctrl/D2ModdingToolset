@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -495,6 +495,7 @@ call ..\buildDetours.bat ..\Detours
     <ClCompile Include="src\menunewskirmishsingle.cpp" />
     <ClCompile Include="src\menuphase.cpp" />
     <ClCompile Include="src\menuphasehooks.cpp" />
+    <ClCompile Include="src\menulordhooks.cpp" />
     <ClCompile Include="src\menuprotocol.cpp" />
     <ClCompile Include="src\menurace.cpp" />
     <ClCompile Include="src\draganddropinterf.cpp" />
@@ -1201,6 +1202,7 @@ call ..\buildDetours.bat ..\Detours
     <ClInclude Include="include\menunewskirmishsingle.h" />
     <ClInclude Include="include\menuphase.h" />
     <ClInclude Include="include\menuphasehooks.h" />
+    <ClInclude Include="include\menulordhooks.h" />
     <ClInclude Include="include\menuprotocol.h" />
     <ClInclude Include="include\menurace.h" />
     <ClInclude Include="include\midbag.h" />

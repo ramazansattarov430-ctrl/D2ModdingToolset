@@ -18,7 +18,6 @@
  */
 
 #include "menuphasehooks.h"
-#include "menulordhooks.h"
 #include "mempool.h"
 #include "menucustomloadskirmishmulti.h"
 #include "menucustomlobby.h"
@@ -249,7 +248,6 @@ void __fastcall menuPhaseSwitchPhaseHooked(game::CMenuPhase* thisptr,
             spdlog::debug("Current is Single2LoadSkirmish");
             if (data->networkGame && CNetCustomService::get()) {
                 spdlog::debug("Show CMenuCustomLoadSkirmishMulti");
-                isLoadingSkirmishMultiSave = true;
                 CMenuPhaseApi::Api::CreateMenuCallback
                     tmp = createMenuCustomLoadSkirmishMultiCallback;
                 auto* callback = &tmp;
@@ -341,12 +339,11 @@ void __fastcall menuPhaseSwitchPhaseHooked(game::CMenuPhase* thisptr,
             // MenuPhase::Single2LoadSkirmish above). Without this check, a loaded save
             // falls through into the same interactive lord/race selection screen as a
             // brand new skirmish, letting the race be changed after the fact.
-            bool loadedGame = isLoadingSkirmishMultiSave;
-            isLoadingSkirmishMultiSave = false;
+            auto loadedGame = CMenuCustomLoadSkirmishMulti::cast(
+                reinterpret_cast<CMenuBase*>(data->currentMenu));
             if (loadedGame) {
                 spdlog::debug("Current is LoadSkirmishMulti (loaded game), locking race selection");
-                lockLordFaceButton = true;
-                menuPhase.switchToLobbyHostJoin(thisptr);
+                menuPhase.switchToWaitAndCreateClient(thisptr);
                 break;
             }
 

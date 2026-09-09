@@ -24,7 +24,6 @@
 #include "netcustomplayer.h"
 #include "netcustomservice.h"
 #include "netcustomsession.h"
-#include "menulordhooks.h"
 #include "netmessages.h"
 #include "netmsg.h"
 #include "settings.h"
@@ -98,11 +97,6 @@ bool __fastcall CNetCustomPlayerClient::sendMessage(CNetCustomPlayerClient* this
     if (idTo != game::serverNetPlayerId) {
         thisptr->getLogger()->debug(
             __FUNCTION__ ": denying sending message to a player other than the server");
-        return false;
-    }
-    if (lockLordFaceButton && !strcmp(message->messageClassName, ".?AVCMenusReqLordMsg@@")) {
-        thisptr->getLogger()->debug(
-            __FUNCTION__ ": denying CMenusReqLordMsg (locked after save load)");
         return false;
     }
 

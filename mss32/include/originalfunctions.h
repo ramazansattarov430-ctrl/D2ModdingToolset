@@ -47,7 +47,6 @@
 #include "mainview2.h"
 #include "menubase.h"
 #include "menuload.h"
-#include "menulord.h"
 #include "menunewskirmishhotseat.h"
 #include "menunewskirmishmulti.h"
 #include "menunewskirmishsingle.h"
@@ -168,12 +167,6 @@ struct OriginalFunctions
     game::CEditBoxInterfApi::Api::EditBoxDataCtor editBoxDataCtor;
 
     game::CMenuLoadApi::Api::CreateServer menuLoadCreateServer;
-
-    game::CMenuLordApi::Api::FaceButtonClick menuLordFaceButtonClick;
-    void (__thiscall *hotseatLobbyRaceLordButtonClick)(void* thisptr);
-    void (__thiscall *lobbyLordButtonClick)(void* thisptr);
-
-    game::CMenuLordApi::Api::Constructor menuLordCtor;
 
     game::AutoDialogApi::Api::LoadAndParseScriptFile autoDialogLoadAndParseScriptFile;
 

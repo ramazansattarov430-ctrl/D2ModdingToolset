@@ -135,8 +135,6 @@
 #include "mempool.h"
 #include "menuload.h"
 #include "menuloadhooks.h"
-#include "menulord.h"
-#include "menulordhooks.h"
 #include "menumain.h"
 #include "menumainhooks.h"
 #include "menunewskirmishhotseathooks.h"
@@ -491,10 +489,6 @@ static Hooks getGameHooks()
         {CMenuPhaseApi::get().transitionToMainOrCloseGame, menuPhaseTransitionToMainOrCloseGameHooked, (void**)&orig.menuPhaseTransitionToMainOrCloseGame},
         {CMenuMainApi::get().createMenu, menuMainCreateMenuHooked},
         {CMenuLoadApi::get().createServer, menuLoadCreateServerHooked, (void**)&orig.menuLoadCreateServer},
-        {CMenuLordApi::get().constructor, menuLordCtorHooked, (void**)&orig.menuLordCtor},
-        {CMenuLordApi::get().faceButtonClick, menuLordFaceButtonClickHooked, (void**)&orig.menuLordFaceButtonClick},
-        {(void*)0x4ddf29, hotseatLobbyRaceLordButtonClickHooked, (void**)&orig.hotseatLobbyRaceLordButtonClick},
-        {(void*)0x4e35de, lobbyLordButtonClickHooked, (void**)&orig.lobbyLordButtonClick},
         {AutoDialogApi::get().loadAndParseScriptFile, autoDialogLoadAndParseScriptFileHooked, (void**)&orig.autoDialogLoadAndParseScriptFile},
         {MidAutoDlgImagesApi::vftable()->loadImage, midAutoDlgImagesLoadImageHooked},
         // Support custom scripts for AI battle actions

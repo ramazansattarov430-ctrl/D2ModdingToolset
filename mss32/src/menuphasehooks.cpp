@@ -18,6 +18,7 @@
  */
 
 #include "menuphasehooks.h"
+#include "menulordhooks.h"
 #include "mempool.h"
 #include "menucustomloadskirmishmulti.h"
 #include "menucustomlobby.h"
@@ -248,6 +249,7 @@ void __fastcall menuPhaseSwitchPhaseHooked(game::CMenuPhase* thisptr,
             spdlog::debug("Current is Single2LoadSkirmish");
             if (data->networkGame && CNetCustomService::get()) {
                 spdlog::debug("Show CMenuCustomLoadSkirmishMulti");
+                isLoadingSkirmishMultiSave = true;
                 CMenuPhaseApi::Api::CreateMenuCallback
                     tmp = createMenuCustomLoadSkirmishMultiCallback;
                 auto* callback = &tmp;
@@ -332,10 +334,26 @@ void __fastcall menuPhaseSwitchPhaseHooked(game::CMenuPhase* thisptr,
             spdlog::debug("Current is Multi2Session");
             menuPhase.switchToSession(thisptr);
             break;
-        case MenuPhase::NewSkirmish2LobbyHost:
+        case MenuPhase::NewSkirmish2LobbyHost: {
+            // MenuPhase::NewSkirmish2LobbyHost and MenuPhase::LoadSkirmishMulti share
+            // the same underlying value, so this case is also entered right after a
+            // saved game finished loading through CMenuCustomLoadSkirmishMulti (see
+            // MenuPhase::Single2LoadSkirmish above). Without this check, a loaded save
+            // falls through into the same interactive lord/race selection screen as a
+            // brand new skirmish, letting the race be changed after the fact.
+            bool loadedGame = isLoadingSkirmishMultiSave;
+            isLoadingSkirmishMultiSave = false;
+            if (loadedGame) {
+                spdlog::debug("Current is LoadSkirmishMulti (loaded game), locking race selection");
+                lockLordFaceButton = true;
+                menuPhase.switchToLobbyHostJoin(thisptr);
+                break;
+            }
+
             spdlog::debug("Current is NewSkirmish2LobbyHost");
             menuPhase.switchToLobbyHostJoin(thisptr);
             break;
+        }
         case MenuPhase::WaitInterf:
             spdlog::debug("Current is WaitInterf");
             menuPhase.switchToWaitAndCreateClient(thisptr);

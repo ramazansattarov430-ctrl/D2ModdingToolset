@@ -100,6 +100,10 @@ struct Api
     /** Loads lord portrait transition animation by name. */
     using LoadLordAnimation = ImagePtr*(__stdcall*)(ImagePtr* animation, const char* animationName);
     LoadLordAnimation loadLordAnimation;
+
+    /** Handles click on lord face (portrait) button, cycles to next lord face. */
+    using FaceButtonClick = void(__thiscall*)(CMenuLord* thisptr);
+    FaceButtonClick faceButtonClick;
 };
 
 Api& get();

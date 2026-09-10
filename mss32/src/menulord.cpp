@@ -32,7 +32,6 @@ static std::array<Api, 3> functions = {{
         (Api::LoadLordFaceImages)0x4e69ce,
         (Api::GetLordAnimation)0x4e7568,
         (Api::LoadLordAnimation)0x4eb590,
-        (Api::FaceButtonClick)0x4e7446,
     },
     // Russobit
     Api{
@@ -41,7 +40,6 @@ static std::array<Api, 3> functions = {{
         (Api::LoadLordFaceImages)0x4e69ce,
         (Api::GetLordAnimation)0x4e7568,
         (Api::LoadLordAnimation)0x4eb590,
-        (Api::FaceButtonClick)0x4e7446,
     },
     // Gog
     Api{
@@ -50,7 +48,6 @@ static std::array<Api, 3> functions = {{
         (Api::LoadLordFaceImages)0x4e5eff,
         (Api::GetLordAnimation)0x4e6a67,
         (Api::LoadLordAnimation)0x4eaa42,
-        (Api::FaceButtonClick)nullptr,
     }
 }};
 // clang-format on
